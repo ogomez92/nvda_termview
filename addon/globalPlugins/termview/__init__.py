@@ -1,7 +1,7 @@
 """termview: review a terminal's output in a browse mode window.
 
-Pressing the review gesture takes a snapshot of the terminal the user is on and presents it in
-NVDA's browsable message window. Lines matching a configured keyword become headings, so the
+Pressing the review gesture takes a snapshot of the terminal the user is on and presents it in a
+browse mode review window. Lines matching a configured keyword become headings, so the
 interesting parts of a long build log or test run can be reached with browse mode heading
 navigation and the elements list.
 
@@ -46,7 +46,8 @@ addonHandler.initTranslation()
 from .capture import CaptureError, captureSnapshot, findTerminalObject  # noqa: E402
 from .conf import getConf, initialize as initializeConfig  # noqa: E402
 from .keywords import KeywordList  # noqa: E402
-from .render import buildDocument, sanitize  # noqa: E402
+from .render import buildDocument  # noqa: E402
+from .reviewWindow import showReview  # noqa: E402
 from .settingsGui import TermviewSettingsPanel  # noqa: E402
 
 try:
@@ -192,16 +193,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Watch the terminal before the window opens, so the guard is already in place by the
 		# time focus leaves it.
 		self._monitorGuard.watch(obj)
-		ui.browseableMessage(
-			document.html,
-			# Translators: The title of the terminal review window.
-			# {name} is the title of the terminal window the snapshot was taken from.
-			title=_("Termview: {name}").format(name=snapshot.sourceName),
-			isHtml=True,
-			closeButton=True,
-			copyButton=True,
-			sanitizeHtmlFunc=sanitize,
-		)
+		try:
+			showReview(
+				document.html,
+				# Translators: The title of the terminal review window.
+				# {name} is the title of the terminal window the snapshot was taken from.
+				title=_("Termview: {name}").format(name=snapshot.sourceName),
+			)
+		except Exception:
+			# Nothing was presented, so there is no window for focus to come back from.
+			self._monitorGuard.cancel()
+			log.error("termview: the review window could not be opened", exc_info=True)
+			ui.message(
+				# Translators: Reported when the review window could not be opened.
+				_("The review window could not be opened. See NVDA's log for details."),
+			)
 
 	@script(
 		# Translators: The description of a termview command, shown in NVDA's input gestures dialog.

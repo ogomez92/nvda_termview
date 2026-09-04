@@ -2,7 +2,7 @@
 
 Termview takes a snapshot of a terminal and opens it in a review window you can read with browse mode.
 
-Terminals are awkward to read with a screen reader. Output scrolls past while you are still listening to it, review mode only reaches what is currently on screen, and finding the one line that says why a build failed means arrowing through hundreds of lines. Termview copies the terminal's contents into NVDA's browsable message window, where all of browse mode is available: arrow keys, `f` for find, say all, and quick navigation. Lines that contain a keyword you have configured become headings, so pressing `h`, or opening the elements list with `NVDA+f7`, jumps straight to the errors.
+Terminals are awkward to read with a screen reader. Output scrolls past while you are still listening to it, review mode only reaches what is currently on screen, and finding the one line that says why a build failed means arrowing through hundreds of lines. Termview copies the terminal's contents into a browse mode window, where all of browse mode is available: arrow keys, `f` for find, say all, and quick navigation. Lines that contain a keyword you have configured become headings, so pressing `h`, or opening the elements list with `NVDA+f7`, jumps straight to the errors.
 
 The snapshot is a still picture. It does not update as the terminal produces more output; press the command again for a fresh one.
 
@@ -23,10 +23,10 @@ The review window opens in browse mode, so all the usual keys work:
 * `NVDA+f7` opens the elements list, which lists every heading in the snapshot.
 * `NVDA+downArrow` reads the whole snapshot from the cursor.
 * `control+f` finds text, and `f3` finds the next match.
-* `alt+c`, or the Copy button, copies the whole snapshot to the clipboard.
+* `control+shift+c`, or the Copy button, copies the whole snapshot to the clipboard.
 * `escape`, or the Close button, closes the window.
 
-The snapshot opens with a short summary: which terminal it came from, when it was taken, and how many lines and headings it contains.
+The window opens with the Copy and Close buttons, then a separator, then the snapshot, so the buttons are reached straight away rather than at the end of a document thousands of lines long. The snapshot itself starts with a short summary: which terminal it came from, when it was taken, and how many lines and headings it contains.
 
 ## Keywords
 

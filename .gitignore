@@ -2,6 +2,8 @@ addon/doc/*.css
 addon/doc/en/
 *_docHandler.py
 *.html
+# The review window's markup is part of the add-on, not a built document.
+!addon/globalPlugins/termview/message.html
 manifest.ini
 *.mo
 *.pot

@@ -1,0 +1,107 @@
+<!doctype html>
+<HTML style="width : 350; height: 300">
+<HEAD>
+<TITLE></TITLE>
+<!--
+The review window, modelled on NVDA's own message.html, which is what ui.browseableMessage opens.
+The difference is the order of the document: the Copy and Close buttons and their separator come
+before the snapshot, so that they are the first thing browse mode reaches instead of lying at the
+end of a document thousands of lines long.
+
+Everything the window displays arrives in window.dialogArguments, so that the labels stay
+translatable and the snapshot never has to be written to disk.
+-->
+<SCRIPT LANGUAGE=javascript>
+<!--
+// Though these should be constants, MSHTML does not support const as of 2024
+var args = window.dialogArguments;
+var copyStatusTimeout = 5000;  // milliseconds before copy status message goes away
+
+function handleKeyPress(e) {
+	/*
+	This code should be effective for modern browsers (EdgeWebView2),
+	while also serving in old IE (MSHTML) contexts.
+	*/
+	e = e || window.event;
+	var key = e.key || e.keyCode;
+	if (key === 'Escape' || key === 27) { // code for escape
+		onCloseButtonPress();
+	} else if (e.shiftKey && e.ctrlKey && (key === 'C' || key === 67)) { // code for Ctrl+Shift+C
+		onCopyButtonPress();
+	}
+}
+
+function onCopyButtonPress() {
+	// Copy code came from http://www.codestore.net/store.nsf/unid/DOMM-4QHQE8/
+	var rng = document.body.createTextRange();
+	// Only the snapshot is copied; the buttons above it are not part of it.
+	rng.moveToElementText(messageDiv);
+	rng.scrollIntoView();
+	rng.select();
+	var success = rng.execCommand("Copy");
+	rng.collapse(false);
+	rng.select();
+	copyStatusDiv.innerHTML = '<p id="copyStatusText" style="font-weight:bold;"></p>';
+	if (success) {  // Notify the user about the copy result
+		copyStatusText.innerText = args.item('copySuccessfulAlertText');
+	} else {
+		copyStatusText.innerText = args.item('copyFailedAlertText');
+	}
+	// Time out the user alert message
+	setTimeout(function() {
+		copyStatusDiv.innerHTML = '';
+	}, copyStatusTimeout);
+}
+
+function onCloseButtonPress() {
+	window.close();
+}
+
+function windowOnClick(e) {
+	// This is only supported in IE browsers.
+	if (!window.ActiveXObject) {
+		return;
+	}
+	var target = window.event.srcElement;
+	if (target.tagName == 'A') {
+		// If clicked on a link, open with the system default browser,
+		// instead of in a new IE window.
+		try {
+			new ActiveXObject('WScript.Shell').Run(target.href);
+		} catch (err) {
+			return;  // fallback to standard behavior
+		}
+		return false;  // cancels default processing
+	}
+}
+
+function windowOnLoad() {
+	if (!args) {  // If args wasn't provided, we can do nothing. Just exit
+		window.close();
+		return;
+	}
+	document.title = args.item('title');
+	copyButton.innerText = args.item('copyButtonText');
+	copyButtonAcceleratorAccessibilityLabel.innerText = args.item('copyButtonAcceleratorAccessibilityLabel');
+	closeButton.innerText = args.item('closeButtonText');
+	// We can't use innerText, even for text-only nodes,
+	// because of #12004.
+	messageDiv.innerHTML = args.item('message');
+}
+//-->
+</SCRIPT>
+</HEAD>
+<body tabindex='0' id='main_body' style="margin:1em" onload="return windowOnLoad()" onkeydown="return handleKeyPress()" onclick="return windowOnClick()">
+
+<!-- "tabindex" is needed to circumvent an old IE/MSHTML bug in the handling of aria-labelledby.
+See: https://www.tpgi.com/aria-labelledby-aria-describedby-support-popular-windows-browsers/ -->
+<span id="copyButtonAcceleratorAccessibilityLabel" style="visibility: hidden;" tabindex="-1"></span>
+
+<div id="buttonDiv">
+<button id="copyButton" onclick="onCopyButtonPress();" aria-labelledby="copyButton copyButtonAcceleratorAccessibilityLabel"></button>&nbsp;<button id="closeButton" onclick="onCloseButtonPress();"></button>
+<div id="copyStatusDiv" role="status" aria-live="polite"></div>
+</div>
+<hr>
+<div id="messageDiv"></div>
+</body>
+</html>
