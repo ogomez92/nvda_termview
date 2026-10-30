@@ -16,6 +16,7 @@ CONFIG_SPEC: Final[dict[str, str]] = {
 	"includeScrollback": "boolean(default=True)",
 	"keepBlankLines": "boolean(default=True)",
 	"stripTimestamps": "boolean(default=True)",
+	"stripDecorations": "boolean(default=True)",
 	"showLineNumbers": "boolean(default=False)",
 	"maxLines": "integer(default=0, min=0, max=100000)",
 }

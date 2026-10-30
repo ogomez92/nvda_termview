@@ -26,7 +26,7 @@ from logHandler import log
 from NVDAObjects import NVDAObject
 from NVDAObjects.behaviors import LiveText, Terminal
 
-from .timestamps import stripFromLines
+from . import decorations, timestamps
 
 addonHandler.initTranslation()
 
@@ -258,12 +258,14 @@ def normaliseText(
 	text: str,
 	keepBlankLines: bool = True,
 	stripTimestamps: bool = True,
+	stripDecorations: bool = True,
 ) -> list[str]:
 	"""Turn raw captured text into clean lines suitable for presentation.
 
 	:param text: The raw text as read from the terminal.
 	:param keepBlankLines: Whether blank lines within the output are preserved.
 	:param stripTimestamps: Whether dates and times are removed from each line.
+	:param stripDecorations: Whether progress bars, spinners and line drawing are removed.
 	:return: The cleaned lines, with leading and trailing blank lines removed.
 	"""
 	text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -272,10 +274,12 @@ def normaliseText(
 	text = _ANSI_ESCAPE_RE.sub("", text)
 	text = _CONTROL_CHAR_RE.sub("", text)
 	lines = [line.rstrip() for line in text.split("\n")]
+	# Both before the blank lines are dealt with, because a line that held nothing but a timestamp
+	# or a border disappears here and should not leave a gap behind for keepBlankLines to argue over.
+	if stripDecorations:
+		lines = decorations.stripFromLines(lines)
 	if stripTimestamps:
-		# Before the blank lines are dealt with, because a line that held nothing but a timestamp
-		# disappears here and should not leave a gap behind for keepBlankLines to argue over.
-		lines = stripFromLines(lines)
+		lines = timestamps.stripFromLines(lines)
 	while lines and not lines[0].strip():
 		del lines[0]
 	while lines and not lines[-1].strip():
@@ -290,6 +294,7 @@ def captureSnapshot(
 	includeScrollback: bool = True,
 	keepBlankLines: bool = True,
 	stripTimestamps: bool = True,
+	stripDecorations: bool = True,
 	maxLines: int = 0,
 ) -> Snapshot:
 	"""Capture the contents of a terminal.
@@ -300,6 +305,8 @@ def captureSnapshot(
 	:param keepBlankLines: Whether blank lines within the output are preserved.
 	:param stripTimestamps: Whether dates and times are removed from each line, so that a log is
 		read as its messages rather than its clock.
+	:param stripDecorations: Whether progress bars, spinners and line drawing are removed, so that
+		a line is read as its text rather than its picture.
 	:param maxLines: If greater than zero, keep only this many lines, dropping the oldest.
 	:return: The captured snapshot.
 	:raises CaptureError: If no capture strategy could read any text.
@@ -320,6 +327,7 @@ def captureSnapshot(
 			raw,
 			keepBlankLines=keepBlankLines,
 			stripTimestamps=stripTimestamps,
+			stripDecorations=stripDecorations,
 		)
 		if not lines:
 			continue

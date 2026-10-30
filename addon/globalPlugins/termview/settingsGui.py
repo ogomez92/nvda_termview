@@ -246,6 +246,17 @@ class TermviewSettingsPanel(SettingsPanel):
 		)
 		self.stripTimestampsCheckBox.SetValue(conf["stripTimestamps"])
 
+		self.stripDecorationsCheckBox = snapshotHelper.addItem(
+			wx.CheckBox(
+				snapshotBox,
+				# Translators: The label of a check box in the termview settings. When checked,
+				# progress bars, spinners and table borders drawn with symbols are left out of the
+				# snapshot, keeping only the text around them.
+				label=_("Strip &progress bars and line drawing"),
+			),
+		)
+		self.stripDecorationsCheckBox.SetValue(conf["stripDecorations"])
+
 		self.lineNumbersCheckBox = snapshotHelper.addItem(
 			wx.CheckBox(
 				snapshotBox,
@@ -372,6 +383,7 @@ class TermviewSettingsPanel(SettingsPanel):
 		conf["includeScrollback"] = self.scrollbackCheckBox.GetValue()
 		conf["keepBlankLines"] = self.blankLinesCheckBox.GetValue()
 		conf["stripTimestamps"] = self.stripTimestampsCheckBox.GetValue()
+		conf["stripDecorations"] = self.stripDecorationsCheckBox.GetValue()
 		conf["showLineNumbers"] = self.lineNumbersCheckBox.GetValue()
 		conf["maxLines"] = self.maxLinesSpinCtrl.GetValue()
 		if not self._keywords.save():

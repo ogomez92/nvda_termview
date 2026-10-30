@@ -169,6 +169,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				includeScrollback=conf["includeScrollback"],
 				keepBlankLines=conf["keepBlankLines"],
 				stripTimestamps=conf["stripTimestamps"],
+				stripDecorations=conf["stripDecorations"],
 				maxLines=conf["maxLines"],
 			)
 		except CaptureError as e:

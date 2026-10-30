@@ -9,5 +9,7 @@ First release.
   wildcards, or with a regular expression, always without regard to case.
 * Strips dates and times from the snapshot by default, so a log is read as its messages rather than
   its clock. Turn off Strip dates and times in the Termview settings to keep them.
+* Strips progress bars, spinners and box drawing from the snapshot by default, leaving only the text.
+  Turn off Strip progress bars and line drawing in the Termview settings to keep them.
 * Captures the full scrollback of Windows Console Host, Windows Terminal and WSL, and the visible screen
   of other terminals, without ever changing which console NVDA's own process is attached to.
