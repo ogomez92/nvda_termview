@@ -4,8 +4,12 @@ The document is deliberately plain: ordinary lines live in ``pre`` blocks so tha
 blank lines survive, and lines matched by a keyword become real HTML headings. That makes NVDA's
 browse mode quick navigation (``h``, ``1`` to ``6``) and the elements list (``NVDA+f7``) work over
 terminal output without any further support from the add-on.
+
+Web addresses and email addresses become real links, so that pressing enter on one in browse
+mode opens it, the same as on a web page.
 """
 
+import re
 import time
 from html import escape
 from typing import Final
@@ -20,7 +24,72 @@ addonHandler.initTranslation()
 
 
 #: The only HTML tags a rendered snapshot uses.
-ALLOWED_TAGS: Final[set[str]] = {"p", "pre", "h1", "h2", "h3", "h4", "h5", "h6"}
+ALLOWED_TAGS: Final[set[str]] = {"p", "pre", "h1", "h2", "h3", "h4", "h5", "h6", "a"}
+#: The only attributes a rendered snapshot uses, by tag.
+ALLOWED_ATTRIBUTES: Final[dict[str, set[str]]] = {"a": {"href"}}
+#: The only URL schemes a link may use. Terminal output is untrusted, so a link to anything else,
+#: such as a ``javascript:`` or ``file:`` URL, is dropped by the sanitiser.
+ALLOWED_URL_SCHEMES: Final[set[str]] = {"http", "https", "ftp", "mailto"}
+
+#: Text that is turned into a link: a web address with its scheme, one starting with ``www.``, or
+#: an email address. Whitespace, quotes and angle brackets always end an address, since they are
+#: what terminal output typically surrounds one with. Something shaped like an email address that
+#: is really an SSH location, such as ``git@github.com:user/repo.git`` or the user part of an
+#: ``ssh://`` URL, is not linked.
+_LINK_PATTERN: Final = re.compile(
+	r"""
+	(?P<url>\b(?:https?|ftp)://[^\s<>"'`]+)
+	|(?P<www>\bwww\.[^\s<>"'`]+)
+	|(?P<email>(?<![/:])\b[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[a-zA-Z]{2,}\b(?!:[\w/~]))
+	""",
+	re.VERBOSE,
+)
+#: Punctuation that ends a sentence rather than an address, when it is the last thing matched.
+_TRAILING_PUNCTUATION: Final = ".,;:!?*"
+#: Closing brackets, which only belong to an address when the address also opens them.
+_BRACKET_PAIRS: Final[dict[str, str]] = {")": "(", "]": "[", "}": "{"}
+
+
+def _trimAddress(address: str) -> str:
+	"""Remove trailing characters that surround an address in prose rather than belong to it.
+
+	:param address: The address as matched.
+	:return: The address without trailing punctuation or unbalanced closing brackets.
+	"""
+	while address:
+		last = address[-1]
+		if last in _TRAILING_PUNCTUATION:
+			address = address[:-1]
+		elif last in _BRACKET_PAIRS and address.count(last) > address.count(_BRACKET_PAIRS[last]):
+			address = address[:-1]
+		else:
+			break
+	return address
+
+
+def linkify(text: str) -> str:
+	"""Escape text for HTML, turning the web and email addresses in it into links.
+
+	:param text: Plain text, such as a terminal line.
+	:return: The escaped text, with each address wrapped in an ``a`` element.
+	"""
+	parts: list[str] = []
+	position = 0
+	for match in _LINK_PATTERN.finditer(text):
+		address = _trimAddress(match.group())
+		if not address or match.start() < position:
+			continue
+		if match.lastgroup == "email":
+			href = f"mailto:{address}"
+		elif match.lastgroup == "www":
+			href = f"http://{address}"
+		else:
+			href = address
+		parts.append(escape(text[position : match.start()]))
+		parts.append(f'<a href="{escape(href)}">{escape(address)}</a>')
+		position = match.start() + len(address)
+	parts.append(escape(text[position:]))
+	return "".join(parts)
 
 
 def sanitize(html: str) -> str:
@@ -31,9 +100,16 @@ def sanitize(html: str) -> str:
 	policy, which matters because that policy decides whether headings survive at all.
 
 	:param html: The rendered document.
-	:return: The document with anything outside :data:`ALLOWED_TAGS` removed.
+	:return: The document with any tag, attribute or link scheme not explicitly allowed removed.
 	"""
-	return nh3.clean(html, tags=ALLOWED_TAGS)
+	return nh3.clean(
+		html,
+		tags=ALLOWED_TAGS,
+		attributes=ALLOWED_ATTRIBUTES,
+		url_schemes=ALLOWED_URL_SCHEMES,
+		# A rel attribute means nothing in the review window, and would only add noise.
+		link_rel=None,
+	)
 
 
 class RenderedSnapshot:
@@ -100,7 +176,7 @@ def buildDocument(
 		headingCount += 1
 		# A heading with no visible text would be unusable, so fall back to the line number.
 		text = displayed.strip() or displayed
-		parts.append(f"<h{level}>{escape(text)}</h{level}>")
+		parts.append(f"<h{level}>{linkify(text)}</h{level}>")
 
 	flushPending()
 	summary = _buildSummary(snapshot, headingCount)

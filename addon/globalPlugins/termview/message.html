@@ -63,13 +63,15 @@ function windowOnClick(e) {
 		return;
 	}
 	var target = window.event.srcElement;
-	if (target.tagName == 'A') {
-		// If clicked on a link, open with the system default browser,
-		// instead of in a new IE window.
+	if (target.tagName == 'A' && target.href) {
+		// A link in the snapshot, activated with a click or by pressing enter on it in browse mode,
+		// opens in the system's default browser or mail program, instead of in a new IE window.
 		try {
 			new ActiveXObject('WScript.Shell').Run(target.href);
 		} catch (err) {
-			return;  // fallback to standard behavior
+			// Following the link here would navigate the review window away from the snapshot, so
+			// a separate window is opened instead.
+			window.open(target.href, '_blank');
 		}
 		return false;  // cancels default processing
 	}
@@ -91,8 +93,10 @@ function windowOnLoad() {
 //-->
 </SCRIPT>
 </HEAD>
-<body tabindex='0' id='main_body' style="margin:1em" onload="return windowOnLoad()" onkeydown="return handleKeyPress()" onclick="return windowOnClick()">
+<body tabindex='0' id='termviewReviewBody' style="margin:1em" onload="return windowOnLoad()" onkeydown="return handleKeyPress()" onclick="return windowOnClick()">
 
+<!-- The body's id is how termview recognises this window, so that its browse mode document does
+not break long lines; see reviewWindow.py. -->
 <!-- "tabindex" is needed to circumvent an old IE/MSHTML bug in the handling of aria-labelledby.
 See: https://www.tpgi.com/aria-labelledby-aria-describedby-support-popular-windows-browsers/ -->
 <span id="copyButtonAcceleratorAccessibilityLabel" style="visibility: hidden;" tabindex="-1"></span>

@@ -11,5 +11,9 @@ First release.
   its clock. Turn off Strip dates and times in the Termview settings to keep them.
 * Strips progress bars, spinners and box drawing from the snapshot by default, leaving only the text.
   Turn off Strip progress bars and line drawing in the Termview settings to keep them.
+* Never breaks a long terminal line into pieces in the review window, whatever NVDA's Maximum number of
+  characters on one line setting says.
+* Turns web addresses and email addresses in the snapshot into links. Press enter on one to open it in
+  your default browser or mail program.
 * Captures the full scrollback of Windows Console Host, Windows Terminal and WSL, and the visible screen
   of other terminals, without ever changing which console NVDA's own process is attached to.

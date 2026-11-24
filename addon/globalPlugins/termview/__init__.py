@@ -47,7 +47,7 @@ from .capture import CaptureError, captureSnapshot, findTerminalObject  # noqa: 
 from .conf import getConf, initialize as initializeConfig  # noqa: E402
 from .keywords import KeywordList  # noqa: E402
 from .render import buildDocument  # noqa: E402
-from .reviewWindow import showReview  # noqa: E402
+from .reviewWindow import ReviewDocument, isReviewDocument, showReview  # noqa: E402
 from .settingsGui import TermviewSettingsPanel  # noqa: E402
 
 try:
@@ -133,6 +133,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except ValueError:
 			log.debugWarning("termview: settings category was already removed")
 		super().terminate()
+
+	def chooseNVDAObjectOverlayClasses(self, obj, clsList) -> None:
+		"""Give the review window's document a browse mode buffer that does not wrap long lines."""
+		try:
+			if isReviewDocument(obj):
+				clsList.insert(0, ReviewDocument)
+		except Exception:
+			# Creating an object must never fail because of this add-on.
+			log.error("termview: could not check for the review window", exc_info=True)
 
 	def event_gainFocus(self, obj, nextHandler) -> None:
 		"""Let NVDA handle the focus change, then run the terminal monitor guard.
